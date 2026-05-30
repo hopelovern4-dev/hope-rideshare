@@ -460,6 +460,15 @@
             L.marker(pickupCoords).addTo(state.driverMap).bindPopup('📍 Pickup: ' + state.activeTrip.pickup).openPopup();
         }
         logAdminEvent('Driver accepted: ' + state.activeTrip.pickup + ' → ' + state.activeTrip.dropoff);
+        // SMS: ride accepted
+        fetch(SMS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'accepted', pickup: state.activeTrip.pickup, dropoff: state.activeTrip.dropoff, fare: state.activeTrip.fare, petSurcharge: state.activeTrip.petSurcharge, carSeatVerified: state.activeTrip.carSeatVerified })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logAdminEvent('📱 SMS sent: ride accepted.');
+            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
+        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
     }
 
     function driverRejectJob() {
@@ -515,6 +524,16 @@
         document.getElementById('rider-status-msg').innerHTML = '🏁 <strong>Arrived!</strong> Trip complete. Please pay your driver.';
         showPaymentCard(fare);
         logAdminEvent('Trip completed: ' + state.activeTrip.pickup + ' → ' + state.activeTrip.dropoff + ' | $' + fare.toFixed(2));
+        // SMS: ride completed
+        const _trip = state.activeTrip;
+        fetch(SMS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'completed', pickup: _trip.pickup, dropoff: _trip.dropoff, fare: _trip.fare })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logAdminEvent('📱 SMS sent: ride completed.');
+            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
+        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
         state.activeTrip = null;
     }
 
