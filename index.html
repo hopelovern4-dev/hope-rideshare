@@ -478,6 +478,12 @@
         document.getElementById('request-ride-btn').disabled = false;
         state.activeTrip = null;
         logAdminEvent('Driver declined ride request.');
+        // SMS: ride declined/cancelled
+        fetch(SMS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'cancelled', pickup: 'N/A', dropoff: 'N/A', fare: 0, reason: 'Driver declined ride request.' })
+        }).catch(() => {});
     }
 
     function triggerViolationCancel() {
@@ -509,6 +515,16 @@
         document.getElementById('request-ride-btn').disabled = false;
         showPaymentCard(fee);
         logAdminEvent('Cancelled. Fee: $' + fee.toFixed(2) + ' | ' + reason);
+        // SMS: cancellation
+        const _ctrip = state.activeTrip;
+        fetch(SMS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'cancelled', pickup: _ctrip ? _ctrip.pickup : 'N/A', dropoff: _ctrip ? _ctrip.dropoff : 'N/A', fare: fee, reason: reason })
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logAdminEvent('📱 SMS sent: cancellation.');
+            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
+        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
         state.activeTrip = null;
     }
 
