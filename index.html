@@ -17,6 +17,23 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
         body { background-color: var(--black); color: var(--white); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
+        /* Women silhouette background for all apps */
+        .app-bg {
+            background-image: url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/4a385978d_generated_image.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .app-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(17,17,17,0.72);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .app-bg > * { position: relative; z-index: 1; }
+
         /* Master App Navigator */
         #app-switcher { display: flex; background: #000; border-bottom: 2px solid var(--pink); z-index: 1000; flex-shrink: 0; }
         .switch-btn { flex: 1; padding: 15px; text-align: center; background: none; border: none; color: var(--gray); font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; }
@@ -128,15 +145,17 @@
 </div>
 
 <!-- ====== RIDER APP ====== -->
-<div id="app-rider" class="app-container active">
-    <div id="rider-splash">
-        <span class="logo-text">HOPE</span>
-        <p class="slogan">Chattanooga's trusted rides for women, by women</p>
-        <div style="width:80%;margin-top:50px;display:flex;flex-direction:column;gap:15px;">
-            <button class="btn-pink" onclick="closeSplash()">Log In</button>
-            <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
+<div id="app-rider" class="app-container active app-bg">
+    <div id="rider-splash" style="background:rgba(17,17,17,0.92);background-image:url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/4a385978d_generated_image.png');background-size:cover;background-position:center;">
+        <div style="position:absolute;inset:0;background:rgba(17,17,17,0.65);"></div>
+        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;padding:20px;">
+            <img src="https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/a03e8075a_IMG_1097.jpeg" alt="HOPE Logo" style="width:85%;max-width:360px;border-radius:12px;margin-bottom:30px;object-fit:contain;" />
+            <div style="width:85%;display:flex;flex-direction:column;gap:15px;">
+                <button class="btn-pink" onclick="closeSplash()">Log In</button>
+                <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
+            </div>
+            <p style="font-size:11px;color:var(--gray);margin-top:25px;">📧 hopechatt4women@zohomail.com</p>
         </div>
-        <p style="font-size:11px;color:var(--gray);margin-top:30px;">📧 hopechatt4women@zohomail.com</p>
     </div>
 
     <div id="rider-content">
@@ -216,7 +235,7 @@
 </div>
 
 <!-- ====== DRIVER APP — FULL SCREEN MAP ====== -->
-<div id="app-driver" class="app-container">
+<div id="app-driver" class="app-container app-bg">
 
     <!-- Full-screen map -->
     <div id="driver-map-container">
@@ -275,7 +294,7 @@
 </div>
 
 <!-- ====== ADMIN APP ====== -->
-<div id="app-admin" class="app-container">
+<div id="app-admin" class="app-container app-bg">
     <div class="admin-header">
         <h2 style="font-size:20px;">⚙️ HOPE Operations Portal</h2>
         <p style="font-size:12px;color:var(--gray);">Chattanooga Dispatch Metrics</p>
