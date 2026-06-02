@@ -134,6 +134,100 @@
 
         /* Rider scrollable content */
         #rider-content { padding: 15px; flex: 1; overflow-y: auto; }
+
+        /* Driver Profile Screen */
+        #driver-profile-screen {
+            position: absolute;
+            inset: 0;
+            background: #111;
+            z-index: 20;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        #driver-profile-screen.open { display: flex; }
+        .profile-header {
+            background: linear-gradient(135deg, #1a1a1a, #2a1020);
+            padding: 30px 20px 20px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 2px solid var(--pink);
+            flex-shrink: 0;
+        }
+        .profile-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--pink);
+            background: #333;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-name { color: white; font-size: 22px; font-weight: 800; }
+        .profile-car { color: var(--gray); font-size: 13px; margin-top: 4px; }
+        .profile-stats {
+            display: flex;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+            flex-shrink: 0;
+        }
+        .profile-stat {
+            flex: 1;
+            text-align: center;
+            padding: 16px 8px;
+            border-right: 1px solid #333;
+        }
+        .profile-stat:last-child { border-right: none; }
+        .profile-stat-val { font-size: 22px; font-weight: 900; color: var(--pink); }
+        .profile-stat-lbl { font-size: 11px; color: var(--gray); margin-top: 3px; }
+        .profile-section {
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .profile-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            cursor: pointer;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .profile-section-header:hover { background: #1a1a1a; }
+        .profile-section-body {
+            display: none;
+            padding: 0 20px 16px;
+            color: var(--gray);
+            font-size: 14px;
+        }
+        .profile-section-body.open { display: block; }
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a2a;
+            color: #ccc;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .profile-menu-item:last-child { border-bottom: none; }
+        .profile-menu-item:hover { color: var(--pink); }
+        .profile-close-btn {
+            position: absolute;
+            top: 14px; right: 16px;
+            background: none; border: none;
+            color: white; font-size: 22px; cursor: pointer; z-index: 21;
+        }
+        .profile-photo-upload {
+            width: 100%; padding: 10px;
+            background: none; border: 2px dashed var(--pink);
+            color: var(--pink); border-radius: 8px;
+            font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -245,7 +339,10 @@
     <!-- Floating top bar -->
     <div id="driver-status-bar">
         <span><span class="status-dot"></span>HOPE 01 — Driver Active</span>
-        <span style="font-size:13px;color:#4CAF50;">● Online</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:13px;color:#4CAF50;">● Online</span>
+            <button onclick="openDriverProfile()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer;" title="Driver Profile">👤</button>
+        </div>
     </div>
 
     <!-- Route status badge -->
@@ -291,6 +388,118 @@
             <button class="btn-outline" onclick="exportLog()">📧 Export Ride Log</button>
         </div>
     </div>
+    <!-- Driver Profile Screen -->
+    <div id="driver-profile-screen">
+        <button class="profile-close-btn" onclick="closeDriverProfile()">✕</button>
+
+        <div class="profile-header">
+            <div class="profile-avatar" id="profile-avatar-wrap">
+                <span id="profile-avatar-emoji">👩</span>
+                <img id="profile-avatar-img" src="" style="display:none;" />
+            </div>
+            <div>
+                <div class="profile-name" id="profile-display-name">Casey Hope</div>
+                <div class="profile-car" id="profile-display-car">Ford Fusion · ABC1234</div>
+                <div style="color:var(--pink);font-size:13px;margin-top:6px;cursor:pointer;" onclick="toggleEditProfile()">✏️ Edit Profile</div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Form (hidden by default) -->
+        <div id="edit-profile-form" style="display:none;background:#1a1a1a;padding:16px 20px;border-bottom:1px solid #333;">
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:13px;">Full Name</label>
+                <input type="text" id="edit-name" placeholder="Your name" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:13px;">Vehicle (Year · Make · Model · Plate)</label>
+                <input type="text" id="edit-car" placeholder="e.g. 2020 Ford Fusion · ABC1234" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:13px;">Phone Number</label>
+                <input type="tel" id="edit-phone" placeholder="423-000-0000" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <input type="file" id="photo-upload-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)" />
+            <button class="profile-photo-upload" onclick="document.getElementById('photo-upload-input').click()">📷 Upload Profile Photo</button>
+            <button class="btn-pink" style="margin-top:12px;" onclick="saveProfile()">Save Profile</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <div class="profile-stat-val" id="profile-trip-count">0</div>
+                <div class="profile-stat-lbl">Rides</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-val">⭐ 5.0</div>
+                <div class="profile-stat-lbl">Rating</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-val" id="profile-revenue">$0</div>
+                <div class="profile-stat-lbl">Earned</div>
+            </div>
+        </div>
+
+        <!-- Sections -->
+        <div class="profile-section">
+            <div class="profile-section-header" onclick="toggleSection('earnings-section')">
+                💰 Earnings &amp; Bonuses <span>›</span>
+            </div>
+            <div class="profile-section-body" id="earnings-section">
+                <div class="profile-menu-item">📅 Scheduled Rides</div>
+                <div class="profile-menu-item">🎁 Referral Bonuses</div>
+                <div class="profile-menu-item">💳 CashApp: $HopeCasey75</div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-section-header" onclick="toggleSection('vehicle-section')">
+                🚗 Vehicle &amp; Documents <span>›</span>
+            </div>
+            <div class="profile-section-body" id="vehicle-section">
+                <div class="profile-menu-item">🪪 Driver's License</div>
+                <div class="profile-menu-item">🛡️ Insurance Card</div>
+                <div class="profile-menu-item">🔧 Vehicle Inspection</div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-section-header" onclick="toggleSection('feedback-section')">
+                ⭐ Feedback &amp; Ratings <span>›</span>
+            </div>
+            <div class="profile-section-body" id="feedback-section">
+                <div class="profile-menu-item">📋 View Rider Reviews</div>
+                <div class="profile-menu-item">🏅 Safety Score</div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-section-header" onclick="toggleSection('account-section')">
+                ⚙️ Account Settings <span>›</span>
+            </div>
+            <div class="profile-section-body" id="account-section">
+                <div class="profile-menu-item">🔔 Notifications</div>
+                <div class="profile-menu-item">🔒 Privacy &amp; Security</div>
+                <div class="profile-menu-item">📧 hopechatt4women@zohomail.com</div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-section-header" onclick="toggleSection('support-section')">
+                🆘 Support &amp; Resources <span>›</span>
+            </div>
+            <div class="profile-section-body" id="support-section">
+                <div class="profile-menu-item">📞 Call Support: 423-805-0162</div>
+                <div class="profile-menu-item">📖 Driver Handbook</div>
+                <div class="profile-menu-item">🚨 Report an Incident</div>
+            </div>
+        </div>
+
+        <div style="padding:20px;">
+            <button class="btn-outline" onclick="closeDriverProfile()" style="margin-bottom:10px;">← Back to Map</button>
+            <button class="btn-black" style="border:1px solid #333;color:#888;" onclick="alert('Log out coming soon.')">🚪 Log Out</button>
+        </div>
+    </div>
+
 </div>
 
 <!-- ====== ADMIN APP ====== -->
@@ -897,6 +1106,67 @@
         logs.innerText += '\n[' + time + '] ' + msg;
         logs.scrollTop = logs.scrollHeight;
     }
+
+    /* ---- DRIVER PROFILE ---- */
+    let driverProfile = {
+        name: 'Casey Hope',
+        car: 'Ford Fusion · ABC1234',
+        phone: '423-805-0162',
+        photo: null
+    };
+
+    function openDriverProfile() {
+        // Sync stats
+        document.getElementById('profile-trip-count').innerText = state.tripCount;
+        document.getElementById('profile-revenue').innerText = '$' + state.totalRevenue.toFixed(0);
+        document.getElementById('driver-profile-screen').classList.add('open');
+    }
+
+    function closeDriverProfile() {
+        document.getElementById('driver-profile-screen').classList.remove('open');
+    }
+
+    function toggleEditProfile() {
+        const form = document.getElementById('edit-profile-form');
+        const isOpen = form.style.display !== 'none';
+        form.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) {
+            document.getElementById('edit-name').value = driverProfile.name;
+            document.getElementById('edit-car').value = driverProfile.car;
+            document.getElementById('edit-phone').value = driverProfile.phone;
+        }
+    }
+
+    function saveProfile() {
+        driverProfile.name = document.getElementById('edit-name').value || driverProfile.name;
+        driverProfile.car = document.getElementById('edit-car').value || driverProfile.car;
+        driverProfile.phone = document.getElementById('edit-phone').value || driverProfile.phone;
+        document.getElementById('profile-display-name').innerText = driverProfile.name;
+        document.getElementById('profile-display-car').innerText = driverProfile.car;
+        document.getElementById('edit-profile-form').style.display = 'none';
+        logAdminEvent('Driver profile updated: ' + driverProfile.name);
+        alert('Profile saved!');
+    }
+
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            driverProfile.photo = e.target.result;
+            const img = document.getElementById('profile-avatar-img');
+            img.src = e.target.result;
+            img.style.display = 'block';
+            document.getElementById('profile-avatar-emoji').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function toggleSection(id) {
+        const body = document.getElementById(id);
+        body.classList.toggle('open');
+    }
+
 </script>
 </body>
 </html>
