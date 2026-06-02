@@ -22,7 +22,7 @@
         .switch-btn { flex: 1; padding: 15px; text-align: center; background: none; border: none; color: var(--gray); font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .switch-btn.active { color: var(--pink); border-bottom: 3px solid var(--pink); background: #1a1a1a; }
 
-        .app-container { flex: 1; display: none; position: relative; background: var(--white); color: var(--black); overflow-y: auto; }
+        .app-container { flex: 1; display: none; position: relative; background: var(--white); color: var(--black); overflow: hidden; }
         .app-container.active { display: flex; flex-direction: column; }
 
         .btn-pink { background-color: var(--pink); color: var(--white); border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; text-align: center; text-decoration: none; display: inline-block; font-size: 15px; }
@@ -44,16 +44,63 @@
         .shortcut-btn { background: var(--light-gray); border: 1px solid #E0E0E0; padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .shortcut-btn:hover { border-color: var(--pink); color: var(--pink); }
 
-        /* Maps */
-        .map-wrapper { width: 100%; height: 220px; background: #EEE; position: relative; border-bottom: 2px solid var(--pink); flex-shrink: 0; }
-        .map-instance { width: 100%; height: 100%; }
-
-        /* DRIVER */
-        #driver-status-bar { background: var(--black); color: var(--white); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        /* DRIVER FULL MAP */
+        #driver-map-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
+        }
+        #driver-map {
+            width: 100%;
+            height: 100%;
+        }
+        /* Driver status bar floating on top of map */
+        #driver-status-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.82);
+            color: var(--white);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
         .status-dot { width: 12px; height: 12px; background: #4CAF50; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* Driver overlay panel — slides up from bottom */
+        #driver-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: var(--white);
+            border-radius: 20px 20px 0 0;
+            padding: 18px;
+            z-index: 10;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+            max-height: 55%;
+            overflow-y: auto;
+        }
         .incoming-alert { background: #FFF3E0; border: 2px solid #FF9800; border-radius: 10px; padding: 15px; margin-bottom: 12px; }
         .incoming-alert h4 { color: #E65100; margin-bottom: 8px; font-size: 16px; }
+
+        /* Route status badge */
+        #route-status-badge {
+            position: absolute;
+            top: 55px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--pink);
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            z-index: 10;
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
 
         /* ADMIN */
         .admin-header { background: var(--black); color: var(--white); padding: 18px; text-align: center; flex-shrink: 0; }
@@ -67,6 +114,9 @@
         .pay-cashapp { background: #00C244; color: white; }
         .pay-paypal { background: #003087; color: white; }
         .pay-card { background: #6c35de; color: white; }
+
+        /* Rider scrollable content */
+        #rider-content { padding: 15px; flex: 1; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -89,11 +139,7 @@
         <p style="font-size:11px;color:var(--gray);margin-top:30px;">📧 hopechatt4women@zohomail.com</p>
     </div>
 
-    <div class="map-wrapper">
-        <div id="rider-map" class="map-instance"></div>
-    </div>
-
-    <div style="padding:15px;flex:1;">
+    <div id="rider-content">
         <h3 style="margin-bottom:10px;color:var(--black);">Where to, sister?</h3>
 
         <div class="shortcut-grid">
@@ -130,6 +176,10 @@
                 </select>
             </div>
 
+            <!-- Stops -->
+            <div id="stops-container"></div>
+            <button class="btn-outline" style="margin-bottom:12px;font-size:13px;" onclick="addStop()">+ Add Stop</button>
+
             <div style="display:flex;gap:15px;margin-bottom:15px;font-size:13px;flex-wrap:wrap;">
                 <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
                     <input type="checkbox" id="rider-pet-fee" onchange="calculateFareEstimate()"> 🐾 Traveling with Pet (+$5)
@@ -165,18 +215,27 @@
     </div>
 </div>
 
-<!-- ====== DRIVER APP ====== -->
+<!-- ====== DRIVER APP — FULL SCREEN MAP ====== -->
 <div id="app-driver" class="app-container">
+
+    <!-- Full-screen map -->
+    <div id="driver-map-container">
+        <div id="driver-map"></div>
+    </div>
+
+    <!-- Floating top bar -->
     <div id="driver-status-bar">
         <span><span class="status-dot"></span>HOPE 01 — Driver Active</span>
         <span style="font-size:13px;color:#4CAF50;">● Online</span>
     </div>
 
-    <div class="map-wrapper">
-        <div id="driver-map" class="map-instance"></div>
-    </div>
+    <!-- Route status badge -->
+    <div id="route-status-badge"></div>
 
-    <div style="padding:15px;flex:1;">
+    <!-- Bottom overlay panel -->
+    <div id="driver-overlay">
+
+        <!-- Incoming request -->
         <div id="driver-job-card" class="incoming-alert" style="display:none;">
             <h4>⚡ Incoming Ride Request!</h4>
             <div id="job-details" style="font-size:14px;margin-bottom:12px;line-height:1.6;"></div>
@@ -186,28 +245,31 @@
             </div>
         </div>
 
-        <div id="driver-active-trip" class="card" style="display:none;">
-            <h4 style="color:var(--pink);margin-bottom:10px;">📍 Active Trip</h4>
-            <div id="active-job-text" style="font-size:14px;line-height:1.7;margin-bottom:15px;"></div>
+        <!-- Active trip -->
+        <div id="driver-active-trip" style="display:none;">
+            <div style="background:var(--light-gray);border-left:4px solid var(--pink);border-radius:8px;padding:12px;margin-bottom:12px;">
+                <div id="active-job-text" style="font-size:14px;line-height:1.7;margin-bottom:10px;"></div>
+                <div id="trip-phase-indicator" style="font-weight:bold;color:var(--pink);font-size:14px;margin-bottom:10px;"></div>
+            </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="btn-pickup-reached" class="btn-pink" onclick="riderPickedUp()" style="display:none;">📍 Rider Picked Up — Start Trip</button>
                 <button class="btn-outline" onclick="triggerViolationCancel()">🚨 No Car Seat Cancel ($15)</button>
                 <button class="btn-outline" onclick="triggerStandardCancel()">❌ Standard Cancel ($15)</button>
-                <button class="btn-pink" onclick="completeTrip()">🛬 Complete Ride & Request Payment</button>
+                <button class="btn-pink" id="btn-complete-trip" onclick="completeTrip()" style="display:none;">🛬 Complete Ride & Request Payment</button>
             </div>
         </div>
 
-        <div id="driver-idle" class="card" style="text-align:center;color:var(--gray);">
-            <p style="font-size:40px;margin-bottom:10px;">🕐</p>
-            <p style="font-weight:bold;">Waiting for ride requests...</p>
+        <!-- Idle -->
+        <div id="driver-idle" style="text-align:center;color:var(--gray);padding:10px 0;">
+            <p style="font-size:36px;margin-bottom:8px;">🕐</p>
+            <p style="font-weight:bold;color:var(--black);">Waiting for ride requests...</p>
             <p style="font-size:13px;margin-top:5px;">You'll get a text the moment a rider books.</p>
         </div>
 
-        <div class="card">
-            <h4 style="margin-bottom:12px;">🛠 Driver Toolkit</h4>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <button class="btn-outline" onclick="addLostFoundFee()">🎒 Lost & Found Fee (+$20)</button>
-                <button class="btn-outline" onclick="exportLog()">📧 Export Ride Log</button>
-            </div>
+        <!-- Toolkit -->
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+            <button class="btn-outline" onclick="addLostFoundFee()">🎒 Lost & Found Fee (+$20)</button>
+            <button class="btn-outline" onclick="exportLog()">📧 Export Ride Log</button>
         </div>
     </div>
 </div>
@@ -219,7 +281,7 @@
         <p style="font-size:12px;color:var(--gray);">Chattanooga Dispatch Metrics</p>
     </div>
 
-    <div style="padding:15px;">
+    <div style="padding:15px;flex:1;overflow-y:auto;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;">
             <div class="stat-box">
                 <div style="font-size:12px;color:var(--gray);font-weight:bold;">DRIVERS ONLINE</div>
@@ -257,7 +319,6 @@
 </div>
 
 <script>
-    // SMS endpoint
     const SMS_ENDPOINT = 'https://superagent-3d489cfb.base44.app/functions/sendRideAlert';
 
     let state = {
@@ -268,8 +329,14 @@
         simulatedDistance: 5.4,
         simulatedMinutes: 12,
         driverMap: null,
-        riderMap: null,
-        riderMarkers: []
+        driverMarker: null,       // live GPS icon
+        pickupMarker: null,
+        dropoffMarker: null,
+        stopMarkers: [],
+        routeLine: null,
+        watchId: null,
+        driverPosition: null,
+        stops: []
     };
 
     const distanceTable = {
@@ -282,21 +349,21 @@
         },
         "Coolidge Park": {
             "Chattanooga Metro Airport": [9.1, 20], "Marriott Chattanooga": [1.2, 6],
-            "Tennessee Aquarium": [1.5, 7], "Discovery Museum": [1.6, 7],
-            "IMAX Chattanooga": [1.4, 6], "Rock City": [8.3, 22],
-            "Ruby Falls": [8.0, 21], "Erlanger Baroness Hospital": [2.5, 9],
-            "Park Ridge Medical Center": [6.0, 16], "CHI Memorial Chattanooga": [6.7, 17]
+            "Tennessee Aquarium": [1.0, 6], "Discovery Museum": [1.1, 7],
+            "IMAX Chattanooga": [1.0, 6], "Rock City": [8.8, 22],
+            "Ruby Falls": [8.5, 21], "Erlanger Baroness Hospital": [2.5, 9],
+            "Park Ridge Medical Center": [5.8, 15], "CHI Memorial Chattanooga": [6.5, 16]
         },
         "Chattanooga Metro Airport": {
             "Marriott Chattanooga": [8.2, 18], "Coolidge Park": [9.1, 20],
-            "Tennessee Aquarium": [8.5, 19], "Discovery Museum": [8.6, 19],
-            "IMAX Chattanooga": [8.4, 19], "Rock City": [13.2, 28],
-            "Ruby Falls": [12.9, 27], "Erlanger Baroness Hospital": [7.4, 17],
-            "Park Ridge Medical Center": [6.3, 15], "CHI Memorial Chattanooga": [5.5, 14]
+            "Tennessee Aquarium": [8.0, 18], "Downtown Chattanooga": [8.0, 18],
+            "Rock City": [12.0, 28], "Ruby Falls": [11.5, 26],
+            "Erlanger Baroness Hospital": [7.0, 16], "Park Ridge Medical Center": [4.2, 12],
+            "CHI Memorial Chattanooga": [4.8, 13]
         },
         "Erlanger Baroness Hospital": {
-            "Chattanooga Metro Airport": [7.4, 17], "Coolidge Park": [2.5, 9],
-            "Marriott Chattanooga": [1.8, 8], "Tennessee Aquarium": [2.1, 9],
+            "Chattanooga Metro Airport": [7.0, 16], "Coolidge Park": [2.5, 9],
+            "Marriott Chattanooga": [1.8, 8], "Tennessee Aquarium": [1.6, 8],
             "Discovery Museum": [2.2, 9], "IMAX Chattanooga": [2.0, 8],
             "Rock City": [8.9, 23], "Ruby Falls": [8.6, 22],
             "Park Ridge Medical Center": [5.5, 14], "CHI Memorial Chattanooga": [6.2, 15]
@@ -324,14 +391,158 @@
         "CHI Memorial Chattanooga": [35.0812, -85.2512]
     };
 
-    window.onload = function() {
+    /* ---- CUSTOM ICONS ---- */
+    const driverIcon = L.divIcon({
+        className: '',
+        html: '<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🚗</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+    const pickupIcon = L.divIcon({
+        className: '',
+        html: '<div style="font-size:26px;line-height:1;">📍</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+    });
+    const dropoffIcon = L.divIcon({
+        className: '',
+        html: '<div style="font-size:26px;line-height:1;">🏁</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30]
+    });
+    const stopIcon = L.divIcon({
+        className: '',
+        html: '<div style="font-size:24px;line-height:1;">🔵</div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
+    });
+
+    /* ---- INIT DRIVER MAP ---- */
+    function initDriverMap() {
+        if (state.driverMap) return;
         const center = [35.0456, -85.3097];
-        state.riderMap = L.map('rider-map').setView(center, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(state.riderMap);
-        state.driverMap = L.map('driver-map').setView(center, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(state.driverMap);
-        L.marker(center).addTo(state.driverMap).bindPopup('🚗 HOPE Driver — Online').openPopup();
-        setTimeout(() => { state.riderMap.invalidateSize(); state.driverMap.invalidateSize(); }, 500);
+        state.driverMap = L.map('driver-map', { zoomControl: false }).setView(center, 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(state.driverMap);
+
+        // Add zoom control bottom-right
+        L.control.zoom({ position: 'bottomright' }).addTo(state.driverMap);
+
+        // Start watching GPS
+        startGPSTracking();
+    }
+
+    function startGPSTracking() {
+        if (!navigator.geolocation) {
+            // Fallback: place driver at Chattanooga center
+            setDriverPosition([35.0456, -85.3097]);
+            return;
+        }
+        // Get initial position fast
+        navigator.geolocation.getCurrentPosition(pos => {
+            setDriverPosition([pos.coords.latitude, pos.coords.longitude]);
+        }, () => {
+            setDriverPosition([35.0456, -85.3097]);
+        }, { enableHighAccuracy: true, timeout: 8000 });
+
+        // Watch continuously
+        state.watchId = navigator.geolocation.watchPosition(pos => {
+            setDriverPosition([pos.coords.latitude, pos.coords.longitude]);
+        }, null, { enableHighAccuracy: true, maximumAge: 5000 });
+    }
+
+    function setDriverPosition(latlng) {
+        state.driverPosition = latlng;
+        if (!state.driverMap) return;
+        if (!state.driverMarker) {
+            state.driverMarker = L.marker(latlng, { icon: driverIcon, zIndexOffset: 1000 })
+                .addTo(state.driverMap)
+                .bindPopup('🚗 You are here');
+            state.driverMap.setView(latlng, 14);
+        } else {
+            state.driverMarker.setLatLng(latlng);
+        }
+        // If on active trip, update route line from driver to next waypoint
+        if (state.activeTrip && state.routeLine) {
+            updateRouteLine();
+        }
+    }
+
+    function updateRouteLine() {
+        if (!state.driverMap || !state.driverPosition) return;
+        const trip = state.activeTrip;
+        if (!trip) return;
+
+        // Build waypoints: driver → pickup (if not picked up) or → stops → dropoff
+        let waypoints = [];
+        if (trip.phase === 'to-pickup') {
+            const pc = locationCoords[trip.pickup];
+            if (pc) waypoints = [state.driverPosition, pc];
+        } else {
+            // en-route to destination via stops
+            waypoints = [state.driverPosition];
+            trip.stops.forEach(s => {
+                if (locationCoords[s]) waypoints.push(locationCoords[s]);
+            });
+            const dc = locationCoords[trip.dropoff];
+            if (dc) waypoints.push(dc);
+        }
+
+        if (state.routeLine) { state.routeLine.remove(); state.routeLine = null; }
+        if (waypoints.length >= 2) {
+            state.routeLine = L.polyline(waypoints, {
+                color: '#D81B60',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '8,6'
+            }).addTo(state.driverMap);
+            state.driverMap.fitBounds(state.routeLine.getBounds(), { padding: [60, 60] });
+        }
+    }
+
+    function clearMapMarkers() {
+        if (state.pickupMarker) { state.pickupMarker.remove(); state.pickupMarker = null; }
+        if (state.dropoffMarker) { state.dropoffMarker.remove(); state.dropoffMarker = null; }
+        state.stopMarkers.forEach(m => m.remove());
+        state.stopMarkers = [];
+        if (state.routeLine) { state.routeLine.remove(); state.routeLine = null; }
+    }
+
+    function plotTripOnMap(trip) {
+        clearMapMarkers();
+        if (!state.driverMap) return;
+
+        const pc = locationCoords[trip.pickup];
+        const dc = locationCoords[trip.dropoff];
+
+        if (pc) {
+            state.pickupMarker = L.marker(pc, { icon: pickupIcon })
+                .addTo(state.driverMap)
+                .bindPopup('📍 Pickup: ' + trip.pickup);
+        }
+
+        // Add stop markers
+        trip.stops.forEach(s => {
+            if (locationCoords[s]) {
+                const m = L.marker(locationCoords[s], { icon: stopIcon })
+                    .addTo(state.driverMap)
+                    .bindPopup('🔵 Stop: ' + s);
+                state.stopMarkers.push(m);
+            }
+        });
+
+        if (dc) {
+            state.dropoffMarker = L.marker(dc, { icon: dropoffIcon })
+                .addTo(state.driverMap)
+                .bindPopup('🏁 Drop-off: ' + trip.dropoff);
+        }
+
+        updateRouteLine();
+    }
+
+    /* ---- APP SWITCHER ---- */
+    window.onload = function() {
         calculateFareEstimate();
     };
 
@@ -340,12 +551,15 @@
         document.querySelectorAll('.switch-btn').forEach(el => el.classList.remove('active'));
         document.getElementById('app-' + app).classList.add('active');
         btn.classList.add('active');
-        setTimeout(() => {
-            if (app === 'rider') state.riderMap && state.riderMap.invalidateSize();
-            if (app === 'driver') state.driverMap && state.driverMap.invalidateSize();
-        }, 200);
+        if (app === 'driver') {
+            setTimeout(() => {
+                initDriverMap();
+                if (state.driverMap) state.driverMap.invalidateSize();
+            }, 150);
+        }
     }
 
+    /* ---- RIDER ---- */
     function closeSplash() {
         const splash = document.getElementById('rider-splash');
         splash.style.opacity = '0';
@@ -359,8 +573,38 @@
     }
 
     function openCustomShortcut() {
-        let val = prompt('Enter your Chattanooga destination:');
-        if (val) alert('Got it! Use the dropoff menu for standard destinations, or let your driver know.');
+        alert('Use the dropoff menu for standard Chattanooga destinations, or let your driver know your custom stop.');
+    }
+
+    function addStop() {
+        const container = document.getElementById('stops-container');
+        const idx = state.stops.length;
+        state.stops.push('');
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.id = 'stop-group-' + idx;
+        div.innerHTML = `<label>Stop ${idx + 1}</label>
+            <div style="display:flex;gap:8px;">
+                <select id="stop-select-${idx}" onchange="state.stops[${idx}]=this.value" style="flex:1;padding:10px;border:1px solid #CCC;border-radius:6px;font-size:14px;">
+                    <option value="">-- Select Stop --</option>
+                    <option>Tennessee Aquarium</option>
+                    <option>Coolidge Park</option>
+                    <option>Marriott Chattanooga</option>
+                    <option>Discovery Museum</option>
+                    <option>Erlanger Baroness Hospital</option>
+                    <option>Park Ridge Medical Center</option>
+                    <option>CHI Memorial Chattanooga</option>
+                    <option>Rock City</option>
+                    <option>Ruby Falls</option>
+                </select>
+                <button onclick="removeStop(${idx})" style="background:none;border:none;color:var(--pink);font-size:20px;cursor:pointer;">✕</button>
+            </div>`;
+        container.appendChild(div);
+    }
+
+    function removeStop(idx) {
+        state.stops.splice(idx, 1);
+        document.getElementById('stop-group-' + idx).remove();
     }
 
     function calculateFareEstimate() {
@@ -374,29 +618,10 @@
         state.simulatedDistance = miles;
         state.simulatedMinutes = minutes;
         const petFee = document.getElementById('rider-pet-fee').checked ? 5.00 : 0.00;
-        const total = 8.00 + (miles * 1.50) + (minutes * 0.30) + petFee;
+        const stopFee = state.stops.filter(s => s).length * 2.00; // $2 per stop
+        const total = 8.00 + (miles * 1.50) + (minutes * 0.30) + petFee + stopFee;
         document.getElementById('estimated-fare-display').innerText = '$' + total.toFixed(2);
-        updateRiderMap(pickup, dropoff);
         return total;
-    }
-
-    function updateRiderMap(pickup, dropoff) {
-        if (!state.riderMap) return;
-        state.riderMarkers.forEach(m => m.remove());
-        state.riderMarkers = [];
-        const pickupCoords = locationCoords[pickup];
-        const dropoffCoords = locationCoords[dropoff];
-        if (pickupCoords) {
-            const m = L.marker(pickupCoords).addTo(state.riderMap).bindPopup('📍 Pickup: ' + pickup);
-            state.riderMarkers.push(m);
-        }
-        if (dropoffCoords) {
-            const m = L.marker(dropoffCoords).addTo(state.riderMap).bindPopup('🏁 Drop-off: ' + dropoff);
-            state.riderMarkers.push(m);
-        }
-        if (pickupCoords && dropoffCoords) {
-            state.riderMap.fitBounds(L.latLngBounds([pickupCoords, dropoffCoords]), { padding: [30, 30] });
-        }
     }
 
     function requestRide() {
@@ -406,34 +631,41 @@
         const fare = calculateFareEstimate();
         const hasPet = document.getElementById('rider-pet-fee').checked;
         const hasCarSeat = document.getElementById('rider-car-seat-declaration').checked;
+        const activeStops = state.stops.filter(s => s);
 
-        state.activeTrip = { pickup, dropoff, fare, status: 'requested', petSurcharge: hasPet, carSeatVerified: hasCarSeat };
+        state.activeTrip = {
+            pickup, dropoff, fare,
+            status: 'requested',
+            petSurcharge: hasPet,
+            carSeatVerified: hasCarSeat,
+            stops: activeStops,
+            phase: 'to-pickup'
+        };
 
         const petNote = hasPet ? ' 🐾 Pet onboard.' : '';
         const carSeatNote = hasCarSeat ? ' 🧒 Car seat confirmed.' : ' ⚠️ No car seat declared.';
+        const stopsNote = activeStops.length ? '<br><strong>Stops:</strong> ' + activeStops.join(', ') : '';
+
         document.getElementById('job-details').innerHTML =
-            '<strong>From:</strong> ' + pickup + '<br><strong>To:</strong> ' + dropoff +
+            '<strong>From:</strong> ' + pickup +
+            '<br><strong>To:</strong> ' + dropoff +
+            stopsNote +
             '<br><strong>Est. Fare:</strong> $' + fare.toFixed(2) +
             '<br><small style="color:var(--gray);">' + petNote + carSeatNote + '</small>';
         document.getElementById('driver-job-card').style.display = 'block';
         document.getElementById('driver-idle').style.display = 'none';
         document.getElementById('rider-status-msg').innerText = '🔍 Finding your HOPE driver...';
         document.getElementById('request-ride-btn').disabled = true;
-
         logAdminEvent('Ride requested: ' + pickup + ' → ' + dropoff + ' | Fare: $' + fare.toFixed(2));
 
-        // 📱 Fire SMS alert to driver
         fetch(SMS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pickup, dropoff, fare, petSurcharge: hasPet, carSeatVerified: hasCarSeat })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.ok) logAdminEvent('📱 SMS alert sent to driver successfully.');
-            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown error'));
-        })
-        .catch(() => logAdminEvent('⚠️ SMS could not be sent — check connection.'));
+        }).then(r => r.json()).then(d => {
+            if (d.ok) logAdminEvent('📱 SMS alert sent to driver.');
+            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
+        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
     }
 
     function resetRiderApp() {
@@ -442,33 +674,80 @@
         document.getElementById('request-ride-btn').disabled = false;
         document.getElementById('rider-pet-fee').checked = false;
         document.getElementById('rider-car-seat-declaration').checked = false;
+        document.getElementById('stops-container').innerHTML = '';
+        state.stops = [];
         calculateFareEstimate();
     }
 
+    /* ---- DRIVER ACTIONS ---- */
     function driverAcceptJob() {
         state.activeTrip.status = 'en-route';
+        state.activeTrip.phase = 'to-pickup';
         document.getElementById('driver-job-card').style.display = 'none';
         document.getElementById('driver-active-trip').style.display = 'block';
+        document.getElementById('driver-idle').style.display = 'none';
+
         document.getElementById('active-job-text').innerHTML =
-            '<strong>Route:</strong> ' + state.activeTrip.pickup + ' ➔ ' + state.activeTrip.dropoff +
-            '<br><strong>Est. Fare:</strong> $' + state.activeTrip.fare.toFixed(2) +
-            '<br><strong>Status:</strong> 🟢 En-Route to Passenger';
+            '<strong>From:</strong> ' + state.activeTrip.pickup +
+            '<br><strong>To:</strong> ' + state.activeTrip.dropoff +
+            (state.activeTrip.stops.length ? '<br><strong>Stops:</strong> ' + state.activeTrip.stops.join(' → ') : '') +
+            '<br><strong>Est. Fare:</strong> $' + state.activeTrip.fare.toFixed(2);
+
+        document.getElementById('trip-phase-indicator').innerText = '🚗 Phase 1: Heading to pickup';
+        document.getElementById('btn-pickup-reached').style.display = 'block';
+        document.getElementById('btn-complete-trip').style.display = 'none';
+
+        // Badge
+        const badge = document.getElementById('route-status-badge');
+        badge.innerText = '🚗 En route to pickup';
+        badge.style.display = 'block';
+
         document.getElementById('rider-status-msg').innerHTML = '🟢 Your HOPE driver is on the way!';
-        const pickupCoords = locationCoords[state.activeTrip.pickup];
-        if (pickupCoords && state.driverMap) {
-            state.driverMap.setView(pickupCoords, 14);
-            L.marker(pickupCoords).addTo(state.driverMap).bindPopup('📍 Pickup: ' + state.activeTrip.pickup).openPopup();
-        }
+
+        // Plot map
+        initDriverMap();
+        setTimeout(() => {
+            plotTripOnMap(state.activeTrip);
+            if (state.driverMap) state.driverMap.invalidateSize();
+        }, 200);
+
         logAdminEvent('Driver accepted: ' + state.activeTrip.pickup + ' → ' + state.activeTrip.dropoff);
-        // SMS: ride accepted
+
         fetch(SMS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'accepted', pickup: state.activeTrip.pickup, dropoff: state.activeTrip.dropoff, fare: state.activeTrip.fare, petSurcharge: state.activeTrip.petSurcharge, carSeatVerified: state.activeTrip.carSeatVerified })
+            body: JSON.stringify({
+                type: 'accepted',
+                pickup: state.activeTrip.pickup,
+                dropoff: state.activeTrip.dropoff,
+                fare: state.activeTrip.fare,
+                petSurcharge: state.activeTrip.petSurcharge,
+                carSeatVerified: state.activeTrip.carSeatVerified
+            })
         }).then(r => r.json()).then(d => {
             if (d.ok) logAdminEvent('📱 SMS sent: ride accepted.');
-            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
-        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
+        }).catch(() => {});
+    }
+
+    function riderPickedUp() {
+        state.activeTrip.phase = 'to-destination';
+        document.getElementById('trip-phase-indicator').innerText = '🏁 Phase 2: En route to destination';
+        document.getElementById('btn-pickup-reached').style.display = 'none';
+        document.getElementById('btn-complete-trip').style.display = 'block';
+
+        // Remove pickup marker, update route to destination
+        if (state.pickupMarker) { state.pickupMarker.remove(); state.pickupMarker = null; }
+
+        const badge = document.getElementById('route-status-badge');
+        badge.innerText = state.activeTrip.stops.length
+            ? '🔵 En route — ' + state.activeTrip.stops.length + ' stop(s)'
+            : '🏁 En route to destination';
+        badge.style.display = 'block';
+
+        document.getElementById('rider-status-msg').innerHTML = '🏁 You\'re in the car — enjoy your ride!';
+
+        updateRouteLine();
+        logAdminEvent('Rider picked up — en route to destination.');
     }
 
     function driverRejectJob() {
@@ -478,7 +757,6 @@
         document.getElementById('request-ride-btn').disabled = false;
         state.activeTrip = null;
         logAdminEvent('Driver declined ride request.');
-        // SMS: ride declined/cancelled
         fetch(SMS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -508,6 +786,8 @@
     function processCancellation(fee, reason) {
         state.totalRevenue += fee;
         updateRevenueDisplay();
+        clearMapMarkers();
+        document.getElementById('route-status-badge').style.display = 'none';
         document.getElementById('driver-active-trip').style.display = 'none';
         document.getElementById('driver-idle').style.display = 'block';
         document.getElementById('rider-status-msg').innerHTML =
@@ -515,16 +795,21 @@
         document.getElementById('request-ride-btn').disabled = false;
         showPaymentCard(fee);
         logAdminEvent('Cancelled. Fee: $' + fee.toFixed(2) + ' | ' + reason);
-        // SMS: cancellation
+
         const _ctrip = state.activeTrip;
         fetch(SMS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'cancelled', pickup: _ctrip ? _ctrip.pickup : 'N/A', dropoff: _ctrip ? _ctrip.dropoff : 'N/A', fare: fee, reason: reason })
+            body: JSON.stringify({
+                type: 'cancelled',
+                pickup: _ctrip ? _ctrip.pickup : 'N/A',
+                dropoff: _ctrip ? _ctrip.dropoff : 'N/A',
+                fare: fee,
+                reason: reason
+            })
         }).then(r => r.json()).then(d => {
             if (d.ok) logAdminEvent('📱 SMS sent: cancellation.');
-            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
-        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
+        }).catch(() => {});
         state.activeTrip = null;
     }
 
@@ -535,38 +820,42 @@
         state.tripCount++;
         updateRevenueDisplay();
         document.getElementById('admin-trip-count').innerText = state.tripCount;
+        clearMapMarkers();
+        document.getElementById('route-status-badge').style.display = 'none';
         document.getElementById('driver-active-trip').style.display = 'none';
         document.getElementById('driver-idle').style.display = 'block';
-        document.getElementById('rider-status-msg').innerHTML = '🏁 <strong>Arrived!</strong> Trip complete. Please pay your driver.';
+        document.getElementById('rider-status-msg').innerHTML =
+            '✅ <strong>Ride Complete!</strong><br>Fare: <strong>$' + fare.toFixed(2) + '</strong><br>Please pay via CashApp: $HopeCasey75';
         showPaymentCard(fare);
-        logAdminEvent('Trip completed: ' + state.activeTrip.pickup + ' → ' + state.activeTrip.dropoff + ' | $' + fare.toFixed(2));
-        // SMS: ride completed
-        const _trip = state.activeTrip;
+        logAdminEvent('Trip completed. Fare: $' + fare.toFixed(2));
+
         fetch(SMS_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'completed', pickup: _trip.pickup, dropoff: _trip.dropoff, fare: _trip.fare })
+            body: JSON.stringify({
+                type: 'completed',
+                pickup: state.activeTrip.pickup,
+                dropoff: state.activeTrip.dropoff,
+                fare: state.activeTrip.fare
+            })
         }).then(r => r.json()).then(d => {
             if (d.ok) logAdminEvent('📱 SMS sent: ride completed.');
-            else logAdminEvent('⚠️ SMS failed: ' + (d.error || 'unknown'));
-        }).catch(() => logAdminEvent('⚠️ SMS could not be sent.'));
+        }).catch(() => {});
         state.activeTrip = null;
     }
 
     function showPaymentCard(amount) {
         document.getElementById('payment-amount-display').innerText = '$' + amount.toFixed(2);
-        document.getElementById('cashapp-link').href = 'https://cash.app/$HopeCasey75/' + amount.toFixed(2);
+        const cashAppLink = document.getElementById('cashapp-link');
+        cashAppLink.href = 'https://cash.app/$HopeCasey75/' + amount.toFixed(2);
         document.getElementById('payment-card').style.display = 'block';
-        document.getElementById('payment-card').scrollIntoView({ behavior: 'smooth' });
     }
 
     function addLostFoundFee() {
-        if (confirm('Apply $20.00 Lost & Found fee?')) {
-            state.totalRevenue += 20.00;
-            updateRevenueDisplay();
-            logAdminEvent('Lost & Found fee applied: $20.00');
-            alert('$20 fee logged.');
-        }
+        state.totalRevenue += 20.00;
+        updateRevenueDisplay();
+        logAdminEvent('Lost & Found fee of $20.00 added.');
+        alert('Lost & Found fee of $20.00 added to session revenue.');
     }
 
     function exportLog() {
@@ -574,9 +863,8 @@
         const blob = new Blob([logs], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = 'HOPE_ride_log_' + new Date().toISOString().slice(0, 10) + '.txt';
-        a.click();
+        a.href = url; a.download = 'HOPE_Ride_Log.txt'; a.click();
+        URL.revokeObjectURL(url);
         logAdminEvent('Ride log exported.');
     }
 
@@ -584,11 +872,11 @@
         document.getElementById('admin-revenue').innerText = '$' + state.totalRevenue.toFixed(2);
     }
 
-    function logAdminEvent(message) {
-        const logger = document.getElementById('admin-logs');
-        const ts = new Date().toLocaleTimeString();
-        logger.innerHTML += '\n[' + ts + '] ' + message;
-        logger.scrollTop = logger.scrollHeight;
+    function logAdminEvent(msg) {
+        const logs = document.getElementById('admin-logs');
+        const time = new Date().toLocaleTimeString();
+        logs.innerText += '\n[' + time + '] ' + msg;
+        logs.scrollTop = logs.scrollHeight;
     }
 </script>
 </body>
