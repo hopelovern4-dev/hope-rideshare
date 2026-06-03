@@ -396,6 +396,7 @@
         /* Bottom ride panel */
         #ride-bottom-panel {
             display: none;
+            position: relative; z-index: 10;
             flex-direction: column;
             background: #111;
             border-top: 2px solid var(--pink);
@@ -542,11 +543,49 @@
     </div>
     <!-- Bottom rider panel (shows during active ride) -->
     <div id="ride-bottom-panel">
-        <div class="rider-name-panel">
+        <!-- Drag handle -->
+        <div style="width:40px;height:4px;background:#333;border-radius:2px;margin:0 auto 12px;"></div>
+
+        <!-- Rider info row -->
+        <div class="rider-name-panel" style="margin-bottom:14px;">
             <div class="rider-avatar-sm">👩</div>
-            <div>
+            <div style="flex:1;">
                 <div class="rider-name-text" id="panel-rider-name">—</div>
                 <div class="rider-dest-text" id="panel-rider-dest">—</div>
+            </div>
+            <!-- Call button -->
+            <button id="panel-call-btn" onclick="callRider()"
+                style="width:44px;height:44px;border-radius:50%;background:#2a2a2a;border:1px solid #444;
+                       font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;">
+                📞
+            </button>
+        </div>
+
+        <!-- Phase 1: Full-width ARRIVE button -->
+        <button id="btn-arrive-full" onclick="driverArrived()"
+            style="display:none;width:100%;padding:18px;background:var(--pink);color:white;
+                   border:none;border-radius:50px;font-size:18px;font-weight:900;cursor:pointer;
+                   letter-spacing:0.5px;">
+            Arrive
+        </button>
+
+        <!-- Phase 2: Arrived countdown + Slide to Start -->
+        <div id="arrived-bottom" style="display:none;">
+            <div style="text-align:center;margin-bottom:10px;">
+                <div id="arrived-countdown" style="font-size:28px;font-weight:900;color:var(--pink);">5:00</div>
+                <div id="arrived-countdown-label" style="color:#888;font-size:12px;">minutes for rider to reach car</div>
+            </div>
+            <div class="slide-wrap" id="slide-start">
+                <div class="slide-track-label">Slide to Start Ride →</div>
+                <div class="slide-thumb" id="slide-start-thumb">→</div>
+            </div>
+        </div>
+
+        <!-- Phase 3: Slide to Drop Off -->
+        <div id="slide-dropoff-wrap" style="display:none;">
+            <div class="slide-wrap" id="slide-dropoff">
+                <div class="slide-track-label">Slide to Drop Off →</div>
+                <div class="slide-thumb" id="slide-dropoff-thumb">🏁</div>
             </div>
         </div>
     </div>
@@ -587,31 +626,10 @@
             <!-- Phase buttons -->
             <div style="display:flex;flex-direction:column;gap:10px;">
 
-                <!-- PHASE 1: Arrived at pickup -->
-                <button id="btn-arrived" class="btn-pink" onclick="driverArrived()" style="display:none;font-size:15px;padding:14px;">
-                    📍 I've Arrived at Pickup
-                </button>
+                <!-- PHASE 1: Arrived button lives in bottom panel now -->
+                <div id="btn-arrived-placeholder" style="display:none;"></div>
 
-                <!-- PHASE 2: Arrived countdown + slide to start -->
-                <div id="arrived-banner">
-                    <p style="color:white;font-weight:700;font-size:15px;margin:0;">🚗 Waiting for rider...</p>
-                    <div id="arrived-countdown">5:00</div>
-                    <div id="arrived-countdown-label">minutes remaining</div>
-                    <div style="margin-top:12px;" id="slide-start-wrap">
-                        <div class="slide-wrap" id="slide-start">
-                            <div class="slide-track-label">Slide to Start Ride →</div>
-                            <div class="slide-thumb" id="slide-start-thumb">→</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PHASE 3: En route — slide to drop off -->
-                <div id="slide-dropoff-wrap" style="display:none;">
-                    <div class="slide-wrap" id="slide-dropoff">
-                        <div class="slide-track-label">Slide to Drop Off →</div>
-                        <div class="slide-thumb" id="slide-dropoff-thumb">🏁</div>
-                    </div>
-                </div>
+                <!-- Phases 2-3 now live in the bottom panel -->
 
                 <button class="btn-outline" onclick="triggerViolationCancel()">🚨 No Car Seat Cancel ($15)</button>
                 <button class="btn-outline" onclick="triggerStandardCancel()">❌ Standard Cancel ($15)</button>
@@ -1211,11 +1229,17 @@
         document.getElementById('btn-arrived').style.display = 'block';
         document.getElementById('arrived-banner').style.display = 'none';
         document.getElementById('slide-dropoff-wrap').style.display = 'none';
-        document.getElementById('ride-bottom-panel').classList.remove('show');
         document.getElementById('eta-bar').classList.remove('show');
-        // Populate bottom panel
-        document.getElementById('panel-rider-name').innerText = state.activeTrip.riderName || 'Rider';
+        // Show bottom panel with Arrive button
+        document.getElementById('ride-bottom-panel').classList.add('show');
+        document.getElementById('btn-arrive-full').style.display = 'block';
+        document.getElementById('arrived-bottom').style.display = 'none';
+        document.getElementById('slide-dropoff-wrap').style.display = 'none';
+        // Rider info
+        const rName = state.activeTrip.riderName || 'Rider';
+        document.getElementById('panel-rider-name').innerText = rName;
         document.getElementById('panel-rider-dest').innerText = '📍 ' + state.activeTrip.pickup + ' → 🏁 ' + state.activeTrip.dropoff;
+        document.getElementById('panel-call-btn').style.display = 'flex';
 
         // Badge
         const badge = document.getElementById('route-status-badge');
@@ -1253,10 +1277,9 @@
         // Called by slide-to-start completing
         state.activeTrip.phase = 'to-destination';
         clearCountdown();
-        document.getElementById('arrived-banner').style.display = 'none';
+        document.getElementById('arrived-bottom').style.display = 'none';
         document.getElementById('trip-phase-indicator').innerText = '🏁 Phase 2: En route to destination';
         document.getElementById('slide-dropoff-wrap').style.display = 'block';
-        document.getElementById('ride-bottom-panel').classList.add('show');
         document.getElementById('eta-bar').classList.add('show');
 
         // Remove pickup marker, route to destination
@@ -1408,9 +1431,17 @@
     let countdownInterval = null;
     let etaInterval = null;
 
+
+    function callRider() {
+        // Placeholder — in production, use masked number via Twilio
+        alert('📞 Calling rider...\n\nIn production this will connect via masked number for privacy.');
+        logAdminEvent('Driver initiated call to rider.');
+    }
+
     function driverArrived() {
-        document.getElementById('btn-arrived').style.display = 'none';
-        document.getElementById('arrived-banner').style.display = 'block';
+        // Swap Arrive button → countdown + slide to start
+        document.getElementById('btn-arrive-full').style.display = 'none';
+        document.getElementById('arrived-bottom').style.display = 'block';
         document.getElementById('trip-phase-indicator').innerText = '📍 Arrived — Waiting for rider';
         document.getElementById('rider-status-msg').innerHTML =
             '🚗 <strong>Your driver has arrived!</strong><br><small>Please come to the car within 5 minutes.</small>';
