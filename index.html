@@ -325,6 +325,100 @@
             font-size: 15px;
         }
         .no-rides-msg .no-rides-icon { font-size: 48px; margin-bottom: 12px; }
+
+        /* Slide-to-action button */
+        .slide-wrap {
+            position: relative;
+            background: #2a2a2a;
+            border-radius: 50px;
+            height: 58px;
+            overflow: hidden;
+            user-select: none;
+            touch-action: none;
+        }
+        .slide-track-label {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-weight: 700;
+            font-size: 15px;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+        }
+        .slide-thumb {
+            position: absolute;
+            left: 4px; top: 4px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: var(--pink);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            cursor: grab;
+            transition: background 0.2s;
+            z-index: 2;
+        }
+        .slide-thumb:active { cursor: grabbing; }
+
+        /* Arrived banner */
+        #arrived-banner {
+            display: none;
+            background: linear-gradient(135deg,#1a1a1a,#2a1020);
+            border-top: 3px solid var(--pink);
+            padding: 16px;
+            text-align: center;
+        }
+        #arrived-countdown {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--pink);
+            margin: 6px 0;
+        }
+        #arrived-countdown-label { color: #ccc; font-size: 13px; }
+
+        /* ETA bar */
+        #eta-bar {
+            display: none;
+            background: #1e1e1e;
+            border-top: 2px solid #333;
+            padding: 10px 16px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        #eta-bar.show { display: flex; }
+        .eta-val { font-size: 18px; font-weight: 900; color: white; }
+        .eta-lbl { font-size: 11px; color: var(--gray); }
+
+        /* Bottom ride panel */
+        #ride-bottom-panel {
+            display: none;
+            flex-direction: column;
+            background: #111;
+            border-top: 2px solid var(--pink);
+            padding: 14px 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        #ride-bottom-panel.show { display: flex; }
+        .rider-name-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .rider-avatar-sm {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid var(--pink);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .rider-name-text { font-size: 18px; font-weight: 800; color: white; }
+        .rider-dest-text { font-size: 13px; color: var(--gray); }
     </style>
 </head>
 <body>
@@ -431,6 +525,31 @@
     <!-- Full-screen map -->
     <div id="driver-map-container">
         <div id="driver-map"></div>
+    <!-- ETA bar shown during navigation -->
+    <div id="eta-bar">
+        <div>
+            <div class="eta-val" id="eta-time">--</div>
+            <div class="eta-lbl">ETA</div>
+        </div>
+        <div style="text-align:center;">
+            <div class="eta-val" id="eta-dist">-- mi</div>
+            <div class="eta-lbl">Distance</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="eta-val" id="eta-arrive">--:--</div>
+            <div class="eta-lbl">Arrive by</div>
+        </div>
+    </div>
+    <!-- Bottom rider panel (shows during active ride) -->
+    <div id="ride-bottom-panel">
+        <div class="rider-name-panel">
+            <div class="rider-avatar-sm">👩</div>
+            <div>
+                <div class="rider-name-text" id="panel-rider-name">—</div>
+                <div class="rider-dest-text" id="panel-rider-dest">—</div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <!-- Floating top bar -->
@@ -464,11 +583,38 @@
                 <div id="active-job-text" style="font-size:14px;line-height:1.7;margin-bottom:10px;"></div>
                 <div id="trip-phase-indicator" style="font-weight:bold;color:var(--pink);font-size:14px;margin-bottom:10px;"></div>
             </div>
+
+            <!-- Phase buttons -->
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <button id="btn-pickup-reached" class="btn-pink" onclick="riderPickedUp()" style="display:none;">📍 Rider Picked Up — Start Trip</button>
+
+                <!-- PHASE 1: Arrived at pickup -->
+                <button id="btn-arrived" class="btn-pink" onclick="driverArrived()" style="display:none;font-size:15px;padding:14px;">
+                    📍 I've Arrived at Pickup
+                </button>
+
+                <!-- PHASE 2: Arrived countdown + slide to start -->
+                <div id="arrived-banner">
+                    <p style="color:white;font-weight:700;font-size:15px;margin:0;">🚗 Waiting for rider...</p>
+                    <div id="arrived-countdown">5:00</div>
+                    <div id="arrived-countdown-label">minutes remaining</div>
+                    <div style="margin-top:12px;" id="slide-start-wrap">
+                        <div class="slide-wrap" id="slide-start">
+                            <div class="slide-track-label">Slide to Start Ride →</div>
+                            <div class="slide-thumb" id="slide-start-thumb">→</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PHASE 3: En route — slide to drop off -->
+                <div id="slide-dropoff-wrap" style="display:none;">
+                    <div class="slide-wrap" id="slide-dropoff">
+                        <div class="slide-track-label">Slide to Drop Off →</div>
+                        <div class="slide-thumb" id="slide-dropoff-thumb">🏁</div>
+                    </div>
+                </div>
+
                 <button class="btn-outline" onclick="triggerViolationCancel()">🚨 No Car Seat Cancel ($15)</button>
                 <button class="btn-outline" onclick="triggerStandardCancel()">❌ Standard Cancel ($15)</button>
-                <button class="btn-pink" id="btn-complete-trip" onclick="completeTrip()" style="display:none;">🛬 Complete Ride & Request Payment</button>
             </div>
         </div>
 
@@ -1062,8 +1208,14 @@
             '<br><strong>Est. Fare:</strong> $' + state.activeTrip.fare.toFixed(2);
 
         document.getElementById('trip-phase-indicator').innerText = '🚗 Phase 1: Heading to pickup';
-        document.getElementById('btn-pickup-reached').style.display = 'block';
-        document.getElementById('btn-complete-trip').style.display = 'none';
+        document.getElementById('btn-arrived').style.display = 'block';
+        document.getElementById('arrived-banner').style.display = 'none';
+        document.getElementById('slide-dropoff-wrap').style.display = 'none';
+        document.getElementById('ride-bottom-panel').classList.remove('show');
+        document.getElementById('eta-bar').classList.remove('show');
+        // Populate bottom panel
+        document.getElementById('panel-rider-name').innerText = state.activeTrip.riderName || 'Rider';
+        document.getElementById('panel-rider-dest').innerText = '📍 ' + state.activeTrip.pickup + ' → 🏁 ' + state.activeTrip.dropoff;
 
         // Badge
         const badge = document.getElementById('route-status-badge');
@@ -1098,24 +1250,27 @@
     }
 
     function riderPickedUp() {
+        // Called by slide-to-start completing
         state.activeTrip.phase = 'to-destination';
+        clearCountdown();
+        document.getElementById('arrived-banner').style.display = 'none';
         document.getElementById('trip-phase-indicator').innerText = '🏁 Phase 2: En route to destination';
-        document.getElementById('btn-pickup-reached').style.display = 'none';
-        document.getElementById('btn-complete-trip').style.display = 'block';
+        document.getElementById('slide-dropoff-wrap').style.display = 'block';
+        document.getElementById('ride-bottom-panel').classList.add('show');
+        document.getElementById('eta-bar').classList.add('show');
 
-        // Remove pickup marker, update route to destination
+        // Remove pickup marker, route to destination
         if (state.pickupMarker) { state.pickupMarker.remove(); state.pickupMarker = null; }
-
         const badge = document.getElementById('route-status-badge');
         badge.innerText = state.activeTrip.stops.length
             ? '🔵 En route — ' + state.activeTrip.stops.length + ' stop(s)'
             : '🏁 En route to destination';
         badge.style.display = 'block';
-
         document.getElementById('rider-status-msg').innerHTML = '🏁 You\'re in the car — enjoy your ride!';
-
         updateRouteLine();
+        startETAUpdater();
         logAdminEvent('Rider picked up — en route to destination.');
+        initSlideDropoff();
     }
 
     function driverRejectJob() {
@@ -1247,6 +1402,153 @@
         logs.scrollTop = logs.scrollHeight;
     }
 
+
+
+    /* ──────── ARRIVED / COUNTDOWN / SLIDE LOGIC ──────── */
+    let countdownInterval = null;
+    let etaInterval = null;
+
+    function driverArrived() {
+        document.getElementById('btn-arrived').style.display = 'none';
+        document.getElementById('arrived-banner').style.display = 'block';
+        document.getElementById('trip-phase-indicator').innerText = '📍 Arrived — Waiting for rider';
+        document.getElementById('rider-status-msg').innerHTML =
+            '🚗 <strong>Your driver has arrived!</strong><br><small>Please come to the car within 5 minutes.</small>';
+
+        // Send SMS
+        fetch(SMS_ENDPOINT, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+                type: 'arrived',
+                pickup: state.activeTrip ? state.activeTrip.pickup : '',
+                dropoff: state.activeTrip ? state.activeTrip.dropoff : '',
+                fare: state.activeTrip ? state.activeTrip.fare : 0
+            })
+        }).then(r=>r.json()).then(d=>{
+            if(d.ok) logAdminEvent('📱 SMS sent: driver arrived.');
+        }).catch(()=>{});
+
+        startCountdown(5 * 60);
+        initSlideStart();
+        logAdminEvent('Driver marked arrived at pickup.');
+    }
+
+    function startCountdown(seconds) {
+        clearCountdown();
+        let remaining = seconds;
+        function tick() {
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            const el = document.getElementById('arrived-countdown');
+            if (el) el.innerText = m + ':' + String(s).padStart(2,'0');
+            if (remaining <= 0) {
+                clearCountdown();
+                if (el) el.innerText = '0:00';
+                document.getElementById('arrived-countdown-label').innerText = 'Time expired — cancel if needed';
+                document.getElementById('arrived-countdown').style.color = '#f44336';
+            }
+            remaining--;
+        }
+        tick();
+        countdownInterval = setInterval(tick, 1000);
+    }
+
+    function clearCountdown() {
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    }
+
+    /* ─── Slide to Start ─── */
+    function initSlideStart() {
+        const wrap = document.getElementById('slide-start');
+        const thumb = document.getElementById('slide-start-thumb');
+        setupSlider(wrap, thumb, function() {
+            riderPickedUp();
+        });
+    }
+
+    /* ─── Slide to Drop Off ─── */
+    function initSlideDropoff() {
+        const wrap = document.getElementById('slide-dropoff');
+        const thumb = document.getElementById('slide-dropoff-thumb');
+        setupSlider(wrap, thumb, function() {
+            completeTrip();
+        });
+    }
+
+    /* ─── Generic slider ─── */
+    function setupSlider(wrap, thumb, onComplete) {
+        if (!wrap || !thumb) return;
+        // Reset
+        thumb.style.left = '4px';
+        let dragging = false;
+        let startX = 0;
+
+        function getX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+
+        function onStart(e) {
+            dragging = true;
+            startX = getX(e) - thumb.offsetLeft;
+            e.preventDefault();
+        }
+        function onMove(e) {
+            if (!dragging) return;
+            const maxLeft = wrap.offsetWidth - thumb.offsetWidth - 4;
+            let newLeft = Math.min(Math.max(4, getX(e) - startX), maxLeft);
+            thumb.style.left = newLeft + 'px';
+            // Progress fill
+            const pct = (newLeft - 4) / (maxLeft - 4);
+            thumb.style.background = pct > 0.9 ? '#4CAF50' : 'var(--pink)';
+            if (pct >= 0.92) {
+                dragging = false;
+                thumb.style.left = maxLeft + 'px';
+                thumb.innerText = '✅';
+                setTimeout(() => { onComplete(); }, 300);
+            }
+            e.preventDefault();
+        }
+        function onEnd() { 
+            if (dragging) {
+                dragging = false;
+                // Snap back if not completed
+                thumb.style.left = '4px';
+                thumb.style.background = 'var(--pink)';
+            }
+        }
+
+        // Touch
+        thumb.addEventListener('touchstart', onStart, {passive:false});
+        document.addEventListener('touchmove', onMove, {passive:false});
+        document.addEventListener('touchend', onEnd);
+        // Mouse
+        thumb.addEventListener('mousedown', onStart);
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+    }
+
+    /* ─── ETA Updater ─── */
+    function startETAUpdater() {
+        if (etaInterval) clearInterval(etaInterval);
+        const dist = state.activeTrip ? state.activeTrip.distance || state.simulatedDistance : state.simulatedDistance;
+        const mins = state.activeTrip ? state.activeTrip.minutes || state.simulatedMinutes : state.simulatedMinutes;
+        let remaining = mins;
+        function updateETA() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() + remaining);
+            const arriveH = now.getHours() % 12 || 12;
+            const arriveM = String(now.getMinutes()).padStart(2,'0');
+            const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            const el_time = document.getElementById('eta-time');
+            const el_dist = document.getElementById('eta-dist');
+            const el_arrive = document.getElementById('eta-arrive');
+            if (el_time) el_time.innerText = remaining + ' min';
+            if (el_dist) el_dist.innerText = dist.toFixed(1) + ' mi';
+            if (el_arrive) el_arrive.innerText = arriveH + ':' + arriveM + ' ' + ampm;
+            if (remaining > 0) remaining--;
+        }
+        updateETA();
+        etaInterval = setInterval(updateETA, 60000);
+    }
 
     /* ---- SCHEDULED RIDES ---- */
     let scheduledRides = JSON.parse(localStorage.getItem('hopeScheduledRides') || '[]');
