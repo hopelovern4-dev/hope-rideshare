@@ -228,6 +228,103 @@
             color: var(--pink); border-radius: 8px;
             font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 13px;
         }
+
+        /* Scheduled Rides Screen */
+        #scheduled-rides-screen {
+            position: absolute;
+            inset: 0;
+            background: #111;
+            z-index: 25;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        #scheduled-rides-screen.open { display: flex; }
+        .scheduled-header {
+            background: linear-gradient(135deg, #1a1a1a, #2a1020);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 2px solid var(--pink);
+            flex-shrink: 0;
+        }
+        .scheduled-header h2 { color: white; font-size: 18px; margin: 0; }
+        .ride-card-scheduled {
+            background: #1e1e1e;
+            border-radius: 12px;
+            margin: 12px 16px;
+            padding: 16px;
+            border-left: 4px solid var(--pink);
+        }
+        .ride-card-scheduled .ride-time {
+            color: var(--pink);
+            font-weight: 900;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .ride-card-scheduled .ride-name {
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .ride-card-scheduled .ride-route {
+            color: var(--gray);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .ride-card-scheduled .ride-fare {
+            color: #4CAF50;
+            font-weight: 800;
+            font-size: 15px;
+            margin-top: 8px;
+        }
+        .ride-card-scheduled .ride-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .btn-accept-scheduled {
+            flex: 1;
+            padding: 10px;
+            background: var(--pink);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-decline-scheduled {
+            flex: 1;
+            padding: 10px;
+            background: #2a2a2a;
+            color: #ccc;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .add-scheduled-form {
+            background: #1a1a1a;
+            margin: 12px 16px;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px dashed var(--pink);
+        }
+        .add-scheduled-form h3 {
+            color: var(--pink);
+            margin: 0 0 12px 0;
+            font-size: 15px;
+        }
+        .no-rides-msg {
+            text-align: center;
+            color: var(--gray);
+            padding: 40px 20px;
+            font-size: 15px;
+        }
+        .no-rides-msg .no-rides-icon { font-size: 48px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
@@ -388,6 +485,49 @@
             <button class="btn-outline" onclick="exportLog()">📧 Export Ride Log</button>
         </div>
     </div>
+    <!-- Scheduled Rides Screen -->
+    <div id="scheduled-rides-screen">
+        <div class="scheduled-header">
+            <button onclick="closeScheduledRides()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer;">←</button>
+            <h2>📅 Scheduled Rides</h2>
+        </div>
+
+        <!-- Add New Scheduled Ride Form -->
+        <div class="add-scheduled-form">
+            <h3>➕ Add Scheduled Ride</h3>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:12px;">Rider Name</label>
+                <input type="text" id="sched-rider-name" placeholder="Rider's name" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:12px;">Pickup Location</label>
+                <input type="text" id="sched-pickup" placeholder="Pickup address" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="color:#ccc;font-size:12px;">Dropoff Location</label>
+                <input type="text" id="sched-dropoff" placeholder="Dropoff address" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <div style="display:flex;gap:10px;">
+                <div class="form-group" style="flex:1;margin-bottom:10px;">
+                    <label style="color:#ccc;font-size:12px;">Date</label>
+                    <input type="date" id="sched-date" style="background:#222;color:white;border:1px solid #444;" />
+                </div>
+                <div class="form-group" style="flex:1;margin-bottom:10px;">
+                    <label style="color:#ccc;font-size:12px;">Time</label>
+                    <input type="time" id="sched-time" style="background:#222;color:white;border:1px solid #444;" />
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label style="color:#ccc;font-size:12px;">Estimated Fare ($)</label>
+                <input type="number" id="sched-fare" placeholder="0.00" step="0.01" style="background:#222;color:white;border:1px solid #444;" />
+            </div>
+            <button class="btn-pink" onclick="addScheduledRide()">Save Scheduled Ride</button>
+        </div>
+
+        <!-- Rides List -->
+        <div id="scheduled-rides-list"></div>
+    </div>
+
     <!-- Driver Profile Screen -->
     <div id="driver-profile-screen">
         <button class="profile-close-btn" onclick="closeDriverProfile()">✕</button>
@@ -445,7 +585,7 @@
                 💰 Earnings &amp; Bonuses <span>›</span>
             </div>
             <div class="profile-section-body" id="earnings-section">
-                <div class="profile-menu-item">📅 Scheduled Rides</div>
+                <div class="profile-menu-item" onclick="openScheduledRides()">📅 Scheduled Rides</div>
                 <div class="profile-menu-item">🎁 Referral Bonuses</div>
                 <div class="profile-menu-item">💳 CashApp: $HopeCasey75</div>
             </div>
@@ -1105,6 +1245,135 @@
         const time = new Date().toLocaleTimeString();
         logs.innerText += '\n[' + time + '] ' + msg;
         logs.scrollTop = logs.scrollHeight;
+    }
+
+
+    /* ---- SCHEDULED RIDES ---- */
+    let scheduledRides = JSON.parse(localStorage.getItem('hopeScheduledRides') || '[]');
+
+    function saveScheduledRidesToStorage() {
+        localStorage.setItem('hopeScheduledRides', JSON.stringify(scheduledRides));
+    }
+
+    function openScheduledRides() {
+        renderScheduledRides();
+        document.getElementById('scheduled-rides-screen').classList.add('open');
+    }
+
+    function closeScheduledRides() {
+        document.getElementById('scheduled-rides-screen').classList.remove('open');
+    }
+
+    function addScheduledRide() {
+        const name = document.getElementById('sched-rider-name').value.trim();
+        const pickup = document.getElementById('sched-pickup').value.trim();
+        const dropoff = document.getElementById('sched-dropoff').value.trim();
+        const date = document.getElementById('sched-date').value;
+        const time = document.getElementById('sched-time').value;
+        const fare = parseFloat(document.getElementById('sched-fare').value) || 0;
+
+        if (!name || !pickup || !dropoff || !date || !time) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        const ride = {
+            id: Date.now(),
+            name, pickup, dropoff, date, time, fare,
+            status: 'pending'  // pending | accepted | declined
+        };
+
+        scheduledRides.push(ride);
+        // Sort by date/time
+        scheduledRides.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+        saveScheduledRidesToStorage();
+
+        // Clear form
+        ['sched-rider-name','sched-pickup','sched-dropoff','sched-date','sched-time','sched-fare'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+
+        renderScheduledRides();
+        logAdminEvent('Scheduled ride added for ' + name + ' on ' + date + ' at ' + time);
+        alert('Scheduled ride saved! ✅');
+    }
+
+    function acceptScheduledRide(id) {
+        const ride = scheduledRides.find(r => r.id === id);
+        if (ride) {
+            ride.status = 'accepted';
+            saveScheduledRidesToStorage();
+            renderScheduledRides();
+            sendSMSAlert('ride_scheduled_accepted', { name: ride.name, pickup: ride.pickup, dropoff: ride.dropoff, date: ride.date, time: ride.time });
+            logAdminEvent('Scheduled ride accepted for ' + ride.name);
+        }
+    }
+
+    function declineScheduledRide(id) {
+        if (!confirm('Remove this scheduled ride?')) return;
+        scheduledRides = scheduledRides.filter(r => r.id !== id);
+        saveScheduledRidesToStorage();
+        renderScheduledRides();
+        logAdminEvent('Scheduled ride declined/removed.');
+    }
+
+    function renderScheduledRides() {
+        const list = document.getElementById('scheduled-rides-list');
+        if (!list) return;
+
+        // Separate upcoming vs past
+        const now = new Date();
+        const upcoming = scheduledRides.filter(r => {
+            const rideDate = new Date(r.date + 'T' + r.time);
+            return rideDate >= now || r.status === 'accepted';
+        });
+        const past = scheduledRides.filter(r => {
+            const rideDate = new Date(r.date + 'T' + r.time);
+            return rideDate < now && r.status !== 'accepted';
+        });
+
+        if (scheduledRides.length === 0) {
+            list.innerHTML = `
+                <div class="no-rides-msg">
+                    <div class="no-rides-icon">📅</div>
+                    <p>No scheduled rides yet.</p>
+                    <p style="font-size:13px;">Use the form above to add one!</p>
+                </div>`;
+            return;
+        }
+
+        function renderRideCard(r) {
+            const rideDate = new Date(r.date + 'T' + r.time);
+            const formattedDate = rideDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const formattedTime = rideDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const statusBadge = r.status === 'accepted'
+                ? '<span style="color:#4CAF50;font-size:12px;font-weight:700;">✅ Confirmed</span>'
+                : '<span style="color:#FFC107;font-size:12px;font-weight:700;">⏳ Pending</span>';
+            const actions = r.status === 'accepted'
+                ? `<button class="btn-decline-scheduled" onclick="declineScheduledRide(${r.id})">🗑 Remove</button>`
+                : `<button class="btn-accept-scheduled" onclick="acceptScheduledRide(${r.id})">✅ Confirm Ride</button>
+                   <button class="btn-decline-scheduled" onclick="declineScheduledRide(${r.id})">✕ Decline</button>`;
+            return \`
+                <div class="ride-card-scheduled">
+                    <div class="ride-time">🕐 \${formattedDate} at \${formattedTime} &nbsp; \${statusBadge}</div>
+                    <div class="ride-name">👩 \${r.name}</div>
+                    <div class="ride-route">📍 \${r.pickup}</div>
+                    <div class="ride-route">🏁 \${r.dropoff}</div>
+                    <div class="ride-fare">💵 \$\${r.fare.toFixed(2)} estimated fare</div>
+                    <div class="ride-actions">\${actions}</div>
+                </div>\`;
+        }
+
+        let html = '';
+        if (upcoming.length > 0) {
+            html += '<div style="color:#ccc;font-size:12px;font-weight:700;padding:10px 16px 0;text-transform:uppercase;letter-spacing:1px;">Upcoming</div>';
+            html += upcoming.map(renderRideCard).join('');
+        }
+        if (past.length > 0) {
+            html += '<div style="color:#555;font-size:12px;font-weight:700;padding:16px 16px 0;text-transform:uppercase;letter-spacing:1px;">Past</div>';
+            html += past.map(renderRideCard).join('');
+        }
+        list.innerHTML = html;
     }
 
     /* ---- DRIVER PROFILE ---- */
