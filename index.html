@@ -35,7 +35,7 @@
         .app-bg > * { position: relative; z-index: 1; }
 
         /* Master App Navigator */
-        #app-switcher { display: flex; background: #000; border-bottom: 2px solid var(--pink); z-index: 1000; flex-shrink: 0; }
+        #app-switcher { display: flex; background: #000; border-bottom: 2px solid var(--pink); z-index: 10000; flex-shrink: 0; position: relative; }
         .switch-btn { flex: 1; padding: 15px; text-align: center; background: none; border: none; color: var(--gray); font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .switch-btn.active { color: var(--pink); border-bottom: 3px solid var(--pink); background: #1a1a1a; }
 
@@ -426,24 +426,25 @@
 </head>
 <body>
 
-<!-- HOPE Splash Screen — top-level overlay -->
-<div id="hope-splash-overlay" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;">
-    <div id="rider-splash" style="background:rgba(17,17,17,0.92);background-image:url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/05482637c_IMG_0857.jpeg');background-size:cover;background-position:center;">
-        <div style="position:absolute;inset:0;background:rgba(17,17,17,0.65);"></div>
-        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;padding:20px;">
-            <img src="https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/a03e8075a_IMG_1097.jpeg" alt="HOPE Logo" style="width:85%;max-width:360px;border-radius:12px;margin-bottom:30px;object-fit:contain;" />
-            <div style="width:85%;display:flex;flex-direction:column;gap:15px;">
-                <button class="btn-pink" onclick="closeSplash()">Log In</button>
-                <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
-            </div>
-            <p style="font-size:11px;color:var(--gray);margin-top:25px;">📧 hopechatt4women@zohomail.com</p>
-        </div>
-    </div>
-</div>
 <div id="app-switcher">
     <button class="switch-btn active" onclick="switchApp('rider', this)">👩 Rider</button>
     <button class="switch-btn" onclick="switchApp('driver', this)">🚗 Driver</button>
     <button class="switch-btn" onclick="switchApp('admin', this)">⚙️ Admin</button>
+</div>
+
+<!-- HOPE Splash Screen — overlays content area only (below tab bar) -->
+<div id="hope-splash-overlay" style="position:fixed;top:44px;left:0;right:0;bottom:0;z-index:500;display:flex;flex-direction:column;background:rgba(17,17,17,0.92);background-image:url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/05482637c_IMG_0857.jpeg');background-size:cover;background-position:center;">
+    <div style="position:absolute;inset:0;background:rgba(17,17,17,0.65);"></div>
+    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;padding:20px;">
+        <img src="https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/a03e8075a_IMG_1097.jpeg" style="width:240px;max-width:85%;border-radius:18px;margin-bottom:20px;object-fit:contain;" alt="HOPE Logo">
+        <p style="font-size:13px;color:#ccc;margin-bottom:6px;letter-spacing:1px;">Chattanooga's Trusted Rides for Women</p>
+        <p style="font-size:12px;color:var(--pink);margin-bottom:30px;font-style:italic;">By Women</p>
+        <div style="width:85%;display:flex;flex-direction:column;gap:15px;">
+            <button class="btn-pink" onclick="closeSplash()">Log In</button>
+            <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
+        </div>
+        <p style="font-size:11px;color:var(--gray);margin-top:25px;">📧 hopechatt4women@zohomail.com</p>
+    </div>
 </div>
 
 <!-- ====== RIDER APP ====== -->
