@@ -63,13 +63,14 @@
 
         /* DRIVER FULL MAP */
         #driver-map-container {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            position: relative;
+            flex: 1;
+            min-height: 0;
             z-index: 1;
         }
         #driver-map {
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
         }
         /* Driver status bar floating on top of map */
         #driver-status-bar {
@@ -526,7 +527,8 @@
     <!-- Full-screen map -->
     <div id="driver-map-container">
         <div id="driver-map"></div>
-    <!-- ETA bar shown during navigation -->
+    </div>
+    <!-- ETA bar shown during navigation (outside map container so it doesn't block tabs) -->
     <div id="eta-bar">
         <div>
             <div class="eta-val" id="eta-time">--</div>
