@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HOPE - Chattanooga Rideshare for Women</title>
@@ -423,6 +424,25 @@
         .rider-name-text { font-size: 18px; font-weight: 800; color: white; }
         .rider-dest-text { font-size: 13px; color: var(--gray); }
     </style>
+
+<style>
+/* ===== LAYOUT FIX: Tab bar always on top, splash below ===== */
+#app-switcher {
+    position: relative;
+    z-index: 99999 !important;
+    flex-shrink: 0;
+}
+#hope-splash-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+}
+#app-rider {
+    position: relative;
+}
+</style>
 </head>
 <body>
 
@@ -432,23 +452,22 @@
     <button class="switch-btn" onclick="switchApp('admin', this)">⚙️ Admin</button>
 </div>
 
-<!-- HOPE Splash Screen — overlays content area only (below tab bar) -->
-<div id="hope-splash-overlay" style="position:fixed;top:44px;left:0;right:0;bottom:0;z-index:500;display:flex;flex-direction:column;background:rgba(17,17,17,0.92);background-image:url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/05482637c_IMG_0857.jpeg');background-size:cover;background-position:center;">
-    <div style="position:absolute;inset:0;background:rgba(17,17,17,0.65);"></div>
-    <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;padding:20px;">
-        <img src="https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/a03e8075a_IMG_1097.jpeg" style="width:240px;max-width:85%;border-radius:18px;margin-bottom:20px;object-fit:contain;" alt="HOPE Logo">
-        <p style="font-size:13px;color:#ccc;margin-bottom:6px;letter-spacing:1px;">Chattanooga's Trusted Rides for Women</p>
-        <p style="font-size:12px;color:var(--pink);margin-bottom:30px;font-style:italic;">By Women</p>
-        <div style="width:85%;display:flex;flex-direction:column;gap:15px;">
-            <button class="btn-pink" onclick="closeSplash()">Log In</button>
-            <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
-        </div>
-        <p style="font-size:11px;color:var(--gray);margin-top:25px;">📧 hopechatt4women@zohomail.com</p>
-    </div>
-</div>
-
 <!-- ====== RIDER APP ====== -->
 <div id="app-rider" class="app-container active app-bg">
+    <!-- Splash screen sits INSIDE rider app only -->
+    <div id="hope-splash-overlay" style="background:rgba(17,17,17,0.92);background-image:url('https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/05482637c_IMG_0857.jpeg');background-size:cover;background-position:center;">
+        <div style="position:absolute;inset:0;background:rgba(17,17,17,0.65);"></div>
+        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;padding:20px;">
+            <img src="https://media.base44.com/images/public/6a199df61f5dd4b83d489cfb/a03e8075a_IMG_1097.jpeg" style="width:240px;max-width:85%;border-radius:18px;margin-bottom:20px;object-fit:contain;" alt="HOPE Logo">
+            <p style="font-size:13px;color:#ccc;margin-bottom:6px;letter-spacing:1px;">Chattanooga's Trusted Rides for Women</p>
+            <p style="font-size:12px;color:var(--pink);margin-bottom:30px;font-style:italic;">By Women</p>
+            <div style="width:85%;display:flex;flex-direction:column;gap:15px;">
+                <button class="btn-pink" onclick="closeSplash()">Log In</button>
+                <button class="btn-black" style="border:1px solid var(--gray);" onclick="closeSplash()">Sign Up</button>
+            </div>
+            <p style="font-size:11px;color:var(--gray);margin-top:25px;">📧 hopechatt4women@zohomail.com</p>
+        </div>
+    </div>
 
     <div id="rider-content">
         <h3 style="margin-bottom:10px;color:var(--black);">Where to, sister?</h3>
@@ -526,7 +545,7 @@
     </div>
 </div>
 
-<!-- ====== DRIVER APP — FULL SCREEN MAP ====== -->
+<!-- ====== DRIVER APP ====== -->
 <div id="app-driver" class="app-container app-bg">
 
     <!-- Full-screen map -->
@@ -812,6 +831,7 @@
 
 </div>
 
+
 <!-- ====== ADMIN APP ====== -->
 <div id="app-admin" class="app-container app-bg">
     <div class="admin-header">
@@ -1085,6 +1105,9 @@
     };
 
     function switchApp(app, btn) {
+        // Always hide splash when switching tabs
+        const splash = document.getElementById('hope-splash-overlay');
+        if (splash) splash.style.display = 'none';
         document.querySelectorAll('.app-container').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.switch-btn').forEach(el => el.classList.remove('active'));
         document.getElementById('app-' + app).classList.add('active');
@@ -1100,9 +1123,10 @@
     /* ---- RIDER ---- */
     function closeSplash() {
         const overlay = document.getElementById('hope-splash-overlay');
-        overlay.style.opacity = '0';
+        if (!overlay) return;
         overlay.style.transition = 'opacity 0.5s';
-        setTimeout(() => overlay.style.display = 'none', 500);
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 500);
         logAdminEvent('Rider signed in.');
     }
 
